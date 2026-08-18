@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from .cost_guard import CostGuard
 from .gap_assessment import PacketAnalysis, PacketAnalyzer
 from .posting import NormalizedPosting
 
@@ -119,12 +120,24 @@ def build_packet(
     profile_yaml: str,
     analyzer: PacketAnalyzer,
     resume_dir: Path,
+    *,
+    cost_guard: CostGuard | None = None,
 ) -> Packet:
+    """Pass a `cost_guard` shared with scoring so spec v4 B2's $2 tripwire
+    covers the whole run, not just the scoring phase. A fresh one is
+    created if omitted, for standalone use.
+    """
+    cost_guard = cost_guard or CostGuard()
     candidates = _resume_candidates(resume_dir)
     prompt = build_gap_user_prompt(posting, profile_yaml, candidates)
+    cost_guard.check(
+        analyzer.price_per_input_token_usd, analyzer.price_per_output_token_usd,
+        GAP_SYSTEM_PROMPT, prompt,
+    )
     analysis = analyzer.analyze(
         job_id=posting.job_id, system_prompt=GAP_SYSTEM_PROMPT, user_prompt=prompt
     )
+    cost_guard.record(analysis.estimated_cost_usd)
     return Packet(job_id=posting.job_id, job_post_md=build_job_post_md(posting), analysis=analysis)
 
 

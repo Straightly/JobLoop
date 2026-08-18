@@ -36,6 +36,9 @@ def make_posting(**overrides):
 
 @dataclass
 class FakeAnalyzer:
+    price_per_input_token_usd: float = 0.0
+    price_per_output_token_usd: float = 0.0
+
     def analyze(self, *, job_id, system_prompt, user_prompt):
         self.last_call = dict(job_id=job_id, system_prompt=system_prompt, user_prompt=user_prompt)
         gaps = (

@@ -69,4 +69,10 @@ class PacketAnalysis:
 
 
 class PacketAnalyzer(Protocol):
+    """`price_per_*_token_usd` lets the shared `CostGuard` project cost
+    before spending, same as `core.llm.Scorer`."""
+
+    price_per_input_token_usd: float
+    price_per_output_token_usd: float
+
     def analyze(self, *, job_id: str, system_prompt: str, user_prompt: str) -> PacketAnalysis: ...

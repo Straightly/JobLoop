@@ -7,6 +7,7 @@ import pytest
 
 from jobloop.core.llm import DIMENSIONS, DimensionScore, ScoringResult
 from jobloop.core.posting import NormalizedPosting
+from jobloop.core.cost_guard import CostGuard
 from jobloop.core.scoring import (
     COST_TRIPWIRE_USD,
     MAX_CANDIDATES,
@@ -103,7 +104,7 @@ def test_score_candidates_stops_before_crossing_tripwire():
     # land at 3.60 -- past $2.00 -- so it's never attempted.
     scorer = FakeScorer(cost_per_call=0.90)
     with pytest.raises(CostTripwireExceeded):
-        score_candidates(postings, "profile", scorer, cost_tripwire_usd=COST_TRIPWIRE_USD)
+        score_candidates(postings, "profile", scorer, cost_guard=CostGuard(tripwire_usd=COST_TRIPWIRE_USD))
     assert scorer.calls == ["0", "1", "2"]  # the 4th was never called
 
 
@@ -113,5 +114,5 @@ def test_score_candidates_projection_uses_scorer_pricing_before_any_call():
     scorer = FakeScorer(price_per_input_token_usd=1.0, price_per_output_token_usd=1.0)
     postings = [make_posting(job_id="1")]
     with pytest.raises(CostTripwireExceeded):
-        score_candidates(postings, "profile", scorer, cost_tripwire_usd=2.00)
+        score_candidates(postings, "profile", scorer, cost_guard=CostGuard(tripwire_usd=2.00))
     assert scorer.calls == []
