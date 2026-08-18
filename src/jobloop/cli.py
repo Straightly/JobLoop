@@ -15,7 +15,8 @@ from .core.config import Config
 from .core.errors import JobLoopError
 
 # Credentials the scheduled Monday run cannot proceed without.
-RUN_SECRETS = ("USAJOBS_API_KEY", "USAJOBS_USER_AGENT", "ANTHROPIC_API_KEY")
+# OpenAI, not spec v4 §9's default of Claude -- Zhi An's call, 2026-08-17.
+RUN_SECRETS = ("USAJOBS_API_KEY", "USAJOBS_USER_AGENT", "OPENAI_API_KEY")
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
