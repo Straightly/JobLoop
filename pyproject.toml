@@ -1,0 +1,20 @@
+[project]
+name = "jobloop"
+version = "0.1.0"
+description = "An agent which loops to work with you till you find a job."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+
+# Runtime dependencies are deliberately empty. The core runs on the standard
+# library alone, so `python3 -m jobloop doctor` works on a clean machine with
+# nothing installed. Add a dependency only when stdlib genuinely cannot do the
+# job, and say why here.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
