@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from jobloop.lanes.federal_ai_roles.filters import (
     apply_hard_filters,
     check_clearance,
@@ -47,11 +49,23 @@ def test_check_clearance_passes_not_required(make_descriptor):
     assert check_clearance(make_descriptor()).excluded is False
 
 
-def test_check_clearance_excludes_when_clearance_required(make_descriptor):
-    d = make_descriptor(Details={"SecurityClearance": "Secret"})
+@pytest.mark.parametrize(
+    "clearance", ["Secret", "Top Secret", "Sensitive Compartmented Information"]
+)
+def test_check_clearance_excludes_named_clearance_levels(make_descriptor, clearance):
+    d = make_descriptor(Details={"SecurityClearance": clearance})
     result = check_clearance(d)
     assert result.excluded is True
-    assert "Secret" in result.reason
+    assert clearance in result.reason
+
+
+def test_check_clearance_passes_other(make_descriptor):
+    # Real bug, found live 2026-08-17: USAJOBS returns SecurityClearance
+    # "Other" for ordinary postings -- including two genuine "IT Specialist
+    # (AI)" matches at HRSA that Zhi An found manually and this lane had
+    # wrongly dropped when "Other" was treated as clearance-required.
+    d = make_descriptor(Details={"SecurityClearance": "Other"})
+    assert check_clearance(d).excluded is False
 
 
 def test_check_clearance_passes_when_field_absent():

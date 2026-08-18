@@ -7,6 +7,17 @@ Out-of-lane role-family exclusion isn't implemented -- it depends on
 The clearance check uses USAJOBS's own `SecurityClearance` field rather than
 keyword-guessing over free text, which spec v4 S5 only had to fall back to
 for lanes without a structured equivalent.
+
+`check_clearance` is an *allowlist* of explicitly-named clearance levels,
+not a blocklist of "not required". Verified live 2026-08-17: real USAJOBS
+data returns `SecurityClearance: "Other"` for plenty of ordinary postings
+(confirmed against two genuine "IT Specialist (AI)" matches at HRSA that
+Zhi An found manually and this lane had wrongly dropped) -- "Other" is not
+a clearance requirement in the S5 sense, it's an unspecified/background-
+investigation designation, and nearly every federal job involves *some*
+background investigation. A blocklist treated anything non-"Not Required" as
+disqualifying and silently ate real matches; the allowlist only excludes on
+an actual named clearance level.
 """
 
 from __future__ import annotations
@@ -18,7 +29,21 @@ from .normalize import is_us_location
 
 _INTERNSHIP_MARKERS = ("intern", "internship", "student trainee", "pathways")
 _MANAGER_MARKERS = ("supervisory", "manager", "director", "branch chief", "division chief")
-_NO_CLEARANCE_VALUES = {"", "not required", "none"}
+
+#: Named clearance levels that genuinely gate employment. Verified live
+#: 2026-08-17 against real USAJOBS data ("Not Required", "Other", "Top
+#: Secret", "Sensitive Compartmented Information" all observed). Extend this
+#: list if a real posting turns up a clearance-requiring value not covered
+#: here -- do not narrow it back to a blocklist.
+_CLEARANCE_REQUIRED_VALUES = {
+    "confidential",
+    "secret",
+    "top secret",
+    "top secret/sci",
+    "sensitive compartmented information",
+    "q access authorization",
+    "l access authorization",
+}
 
 
 @dataclass(frozen=True)
@@ -58,7 +83,7 @@ def check_people_manager(descriptor: dict[str, Any]) -> FilterResult:
 def check_clearance(descriptor: dict[str, Any]) -> FilterResult:
     clearance = descriptor.get("UserArea", {}).get("Details", {}).get("SecurityClearance", "") or ""
     clearance = clearance.strip()
-    if clearance.lower() not in _NO_CLEARANCE_VALUES:
+    if clearance.lower() in _CLEARANCE_REQUIRED_VALUES:
         return FilterResult(True, f"clearance required: {clearance!r}")
     return FilterResult(False)
 
